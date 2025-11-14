@@ -6,5 +6,6 @@ Okay na
 notes;
 - naka varchar contact number muna
 - IDS are also auto generated, same w join date
-- 
+- pa double check nalang rin yung sql hehe thank you
+  
 ill fix and add more comments 
