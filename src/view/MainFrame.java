@@ -3,7 +3,9 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 import controller.NavigationController;
+import controller.ParcelBookController;
 import controller.RecordManagementController;
+import controller.TransactionsController;
 
 /**
  * Main application window
@@ -35,19 +37,28 @@ public class MainFrame extends JFrame {
         mainPanel = new JPanel(cardLayout);
         mainPanel.setBackground(new Color(28, 28, 28));
 
-        // menu panels, add to main panel
-        mainPanel.add(new TransactionsPanel(), "TransactionsMenu");
-        
+
+    
+        // load Transactions Panel
+        TransactionsPanel transactionsPanel = new TransactionsPanel();
+        mainPanel.add(transactionsPanel, "TransactionsMenu");
+
+        // call controller for transactions panel
+        new TransactionsController(transactionsPanel, mainPanel, cardLayout);
+        // call controller for book parcel form
+        new ParcelBookController(transactionsPanel, mainPanel, cardLayout, this);
+
+        // load Record Management Panel
         RecordManagementPanel recordPanel = new RecordManagementPanel();
         mainPanel.add(recordPanel, "RecordMenu");
 
-        // call controller
+        // call controller for record management panel
         new RecordManagementController(recordPanel);
 
+        // load Reports Panel, pero no logic yet or anything
         mainPanel.add(new ReportsPanel(), "ReportsMenu");          
 
-        // add subpanels here too (will continue later)
-
+        // show transactions menu by default
         cardLayout.show(mainPanel, "TransactionsMenu");
 
         // Add sidebar + main panel
