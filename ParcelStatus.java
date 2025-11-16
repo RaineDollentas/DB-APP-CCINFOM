@@ -1,7 +1,5 @@
-import com.mysql.cj.protocol.Resultset;
-
 import java.sql.*;
-import java.time.LocalDateTime;
+
 
 /**
  * Data Management Code for 'parcelstatus' table
@@ -16,21 +14,30 @@ public class ParcelStatus {
     private String recipientAddress;
     private String timeStamp;
 
-    private String dbUrl = "jdbc:mysql://127.0.0.1:3306/?user=root"; //local to my machine
-    private String dbUser = "root";
-    private String dbPass = "r00tpAssword"; //local to my machine
+    private final String dbUrl = "jdbc:mysql://127.0.0.1:3306/?user=root"; //local to my machine
+    private final String dbUser = "root";
+    private final String dbPass = "admin"; //local to my machine
 
 
     /**
-     * Initialize fields with invalid default values
+     * Initialize fields with default values that would
+     * be deemed as invalid
      */
     public ParcelStatus() {
+        this.resetFields();
+    }
+
+    /**
+     * Sets all attributes to an empty string
+     * which is considered invalid
+     */
+    public void resetFields() {
         this.trackingId = "";
         this.parcelId = "";
         this.courierId = "";
         this.statusUpdate = "";
         this.recipientAddress = "";
-        this.timeStamp = LocalDateTime.MIN;
+        this.timeStamp = "";
     }
 
     /**
@@ -38,11 +45,8 @@ public class ParcelStatus {
      * @return validity of the all the attributes
      */
     public boolean checkAttributes(){
-        if (this.trackingId.isEmpty() && this.parcelId.isEmpty() && this.courierId.isEmpty() &&
-            this.statusUpdate.isEmpty() && this.recipientAddress.isEmpty() && this.timeStamp.isEmpty())
-            return false;
-        else
-            return true;
+        return !this.trackingId.isEmpty() || !this.parcelId.isEmpty() || !this.courierId.isEmpty() ||
+                !this.statusUpdate.isEmpty() || !this.recipientAddress.isEmpty() || !this.timeStamp.isEmpty();
     }
 
     /**
@@ -76,7 +80,7 @@ public class ParcelStatus {
             Connection conn = DriverManager.getConnection(this.dbUrl, this.dbUser, this.dbPass);
             conn.setCatalog("lalamove-lite");
 
-            PreparedStatement pStmt = conn.prepareStatement("SELECT * FROM parcelstatus WHERE parcel_id = ?");
+            PreparedStatement pStmt = conn.prepareStatement("SELECT * FROM parcel_status WHERE parcel_id = ?");
             pStmt.setString(1, trackingId);
 
             try (ResultSet rs = pStmt.executeQuery()){
@@ -88,8 +92,6 @@ public class ParcelStatus {
                     this.recipientAddress =  rs.getString("recipient_address");
                     this.timeStamp = rs.getString("timestamp");
 
-
-
                     return 1;
                 } else {
                     return 0;
@@ -97,22 +99,21 @@ public class ParcelStatus {
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
+            return 0;
         }
-
-        return 0;
     }
 
     /**
-     * adds a record based on the current attributes of the object
-     * @return 1 if successful,
+     * Adds a record based on the current attributes of the object
+     * @return 1 if successful
      */
     public int addRecord(){
-        if (checkAttributes()) {
+        if (this.checkAttributes()) {
             try {
                 Connection conn = DriverManager.getConnection(this.dbUrl, this.dbUser, this.dbPass);
                 conn.setCatalog("lalamove-lite");
 
-                PreparedStatement pStmt = conn.prepareStatement("INSERT INTO parcelstatus VALUES (?,?,?,?,?,?)");
+                PreparedStatement pStmt = conn.prepareStatement("INSERT INTO parcel_status VALUES (?,?,?,?,?,?)");
                 pStmt.setString(1, this.trackingId);
                 pStmt.setString(2, this.parcelId);
                 pStmt.setString(3, this.courierId);
@@ -124,9 +125,115 @@ public class ParcelStatus {
                 return 1;
             } catch (SQLException e) {
                 System.out.println(e.getMessage());
+                return 0;
             }
         }
 
         return 0;
     }
+
+    /**
+     * Modifies an existing record within the database
+     * @param trackingId The tracking_id of the record to be modified
+     * @param newRecord the record to get the new info from
+     * @return the success of the update
+     */
+    public int modRecord(String trackingId, ParcelStatus newRecord){
+
+        try{
+            Connection conn = DriverManager.getConnection(this.dbUrl,this.dbUser,this.dbPass);
+            conn.setCatalog("lalamove-lite");
+
+            PreparedStatement statement = conn.prepareStatement("UPDATE parcel_status SET " +
+                    "tracking_id = ?, parcel_id = ?, courier_id = ?, status_update = ?, " +
+                    "recipient_address = ?, timestamp = ? " +
+                    "WHERE tracking_id = ?");
+
+            statement.setString(1, newRecord.trackingId);
+            statement.setString(2, newRecord.parcelId);
+            statement.setString(3, newRecord.courierId);
+            statement.setString(4, newRecord.statusUpdate);
+            statement.setString(5, newRecord.recipientAddress);
+            statement.setString(6, newRecord.timeStamp);
+            statement.setString(7, trackingId);
+
+            statement.executeUpdate();
+            return 1;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return 0;
+        }
+
+    }
+
+    /**
+     * Deletes a record from the table
+     * @return The success of deletion
+     */
+    public int deleteRecord(String trackingId, String parcelId) {
+        try {
+            Connection conn = DriverManager.getConnection(this.dbUrl,this.dbUser,this.dbPass);
+            conn.setCatalog("lalamove-lite");
+
+            PreparedStatement statement = conn.prepareStatement("DELETE FROM parcel_status WHERE tracking_id = ? AND parcel_id = ?");
+
+            statement.setString(1, trackingId);
+            statement.setString(2, parcelId);
+
+            statement.executeUpdate();
+            return 1;
+        } catch (SQLException e){
+            System.out.println(e.getMessage());
+            return 0;
+        }
+    }
+
+    public String getTrackingId() {
+        return trackingId;
+    }
+
+    public String getParcelId() {
+        return parcelId;
+    }
+
+    public String getCourierId() {
+        return courierId;
+    }
+
+    public String getStatusUpdate() {
+        return statusUpdate;
+    }
+
+    public String getRecipientAddress() {
+        return recipientAddress;
+    }
+
+    public String getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTrackingId(String trackingId) {
+        this.trackingId = trackingId;
+    }
+
+    public void setCourierId(String courierId) {
+        this.courierId = courierId;
+    }
+
+    public void setParcelId(String parcelId) {
+        this.parcelId = parcelId;
+    }
+
+    public void setRecipientAddress(String recipientAddress) {
+        this.recipientAddress = recipientAddress;
+    }
+
+    public void setStatusUpdate(String statusUpdate) {
+        this.statusUpdate = statusUpdate;
+    }
+
+    public void setTimeStamp(String timeStamp) {
+        this.timeStamp = timeStamp;
+    }
 }
+
