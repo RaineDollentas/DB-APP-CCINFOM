@@ -66,4 +66,23 @@ public class CustomerDatabase {
         stmt.setInt(1, customerId);
         stmt.executeUpdate();
     }
+    
+    // Get specific customer with their parcels (Corpuz)
+    public static ResultSet getCustomerWithParcels(Connection conn, int customerId) throws SQLException {
+        String sql = """
+            SELECT 
+                c.customer_id, c.first_name, c.last_name, c.address, c.contact_no, c.email, c.join_date,
+                p.parcel_id, p.status, p.booking_date,
+                cr.first_name as courier_first_name, cr.last_name as courier_last_name
+            FROM customers c
+            LEFT JOIN parcels p ON c.customer_id = p.customer_id
+            LEFT JOIN couriers cr ON p.courier_id = cr.courier_id
+            WHERE c.customer_id = ?
+            ORDER BY p.booking_date DESC
+        """;
+        
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, customerId);
+        return stmt.executeQuery();
+    }
 }
