@@ -2,6 +2,7 @@ package controller;
 
 import view.RecordManagementPanel;
 import view.CustomerForm;
+import view.CustomerDetailsDialog;
 import database.LoadTable;
 import database.DBConnection;
 import database.CustomerDatabase;
@@ -28,6 +29,14 @@ public class RecordManagementController {
         view.btnAdd.addActionListener(e -> addCustomer());
         view.btnEdit.addActionListener(e -> editCustomer());
         view.btnDelete.addActionListener(e -> deleteCustomer());
+
+        // Add double-click to view customer details (Corpuz)
+        view.table.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) { // Double click
+                    viewCustomerDetails();}
+                }
+         });
     }
 
     // show tables
@@ -168,5 +177,22 @@ public class RecordManagementController {
                 JOptionPane.showMessageDialog(view, "Error deleting customer");
             }
         }
+    }
+    // View Customer Details with Parcels (Corpuz)
+    private void viewCustomerDetails() {
+        int row = view.table.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(view, "Please select a customer to view details.");
+            return;
+        }
+
+        int customerId = Integer.parseInt(view.table.getValueAt(row, 0).toString());
+        
+        // Open customer details dialog
+        CustomerDetailsDialog dialog = new CustomerDetailsDialog(
+            (JFrame) SwingUtilities.getWindowAncestor(view), 
+            customerId
+        );
+        dialog.setVisible(true);
     }
 }
