@@ -15,9 +15,13 @@ public class LoadTable {
             ResultSetMetaData meta = rs.getMetaData();
             int columnCount = meta.getColumnCount();
 
-            // create table model
-            DefaultTableModel model = new DefaultTableModel();
-            
+            // create table model (edit: make it non-editable when double clicking the customer)
+            DefaultTableModel model = new DefaultTableModel() {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false; // All cells non-editable
+                }
+            };
             // add column names
             for (int i = 1; i <= columnCount; i++) {
                 model.addColumn(meta.getColumnName(i));
