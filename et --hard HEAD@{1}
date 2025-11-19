@@ -1,0 +1,18 @@
+[33m02d32d9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to origin/main
+[33mf2e8415[m HEAD@{1}: reset: moving to HEAD
+[33mf2e8415[m HEAD@{2}: commit: transactions, record management complete. Need 2 left for report and some small tweaks sa iba.
+[33mddb7503[m HEAD@{3}: checkout: moving from r to main
+[33m8fd03c5[m[33m ([m[1;31morigin/r[m[33m, [m[1;32mr[m[33m)[m HEAD@{4}: reset: moving to HEAD
+[33m8fd03c5[m[33m ([m[1;31morigin/r[m[33m, [m[1;32mr[m[33m)[m HEAD@{5}: pull --tags origin r: Merge made by the 'ort' strategy.
+[33m6899c0f[m HEAD@{6}: commit: sadasda
+[33m02d32d9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{7}: checkout: moving from main to r
+[33mddb7503[m HEAD@{8}: reset: moving to HEAD
+[33mddb7503[m HEAD@{9}: reset: moving to HEAD
+[33mddb7503[m HEAD@{10}: commit: courier (by imperial), delivery trends report, tracking parcel record management implemented
+[33m507cb79[m HEAD@{11}: checkout: moving from raine2.0 to main
+[33mffd9572[m[33m ([m[1;32mraine2.0[m[33m)[m HEAD@{12}: commit: bookparcel feature, added comments there pa read nalang
+[33mba73124[m HEAD@{13}: checkout: moving from raine to raine2.0
+[33mfb4f2fc[m[33m ([m[1;32mraine[m[33m)[m HEAD@{14}: reset: moving to HEAD
+[33mfb4f2fc[m[33m ([m[1;32mraine[m[33m)[m HEAD@{15}: commit: ui, customer add edit delete
+[33m9242592[m HEAD@{16}: checkout: moving from main to raine
+[33m9242592[m HEAD@{17}: clone: from https://github.com/RaineDollentas/DB-APP-CCINFOM.git

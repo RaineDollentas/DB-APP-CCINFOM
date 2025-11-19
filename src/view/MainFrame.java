@@ -4,9 +4,11 @@ import javax.swing.*;
 import java.awt.*;
 import controller.NavigationController;
 import controller.ParcelBookController;
-import controller.RecordManagementController;
 import controller.TransactionsController;
 import controller.ReportsController; // ADD THIS IMPORT
+import controller.RecordManagementController;
+import controller.DeliveryCompletionController;
+
 
 /**
  * Main application window
@@ -68,6 +70,8 @@ public class MainFrame extends JFrame {
 
         // connect to controller, handles sidebar buttons
         new NavigationController(sidebar, mainPanel, cardLayout);
+        // call controller for delivery completion (Corpuz)
+        new DeliveryCompletionController(transactionsPanel, this);
     }
 
     public static void main(String[] args) {

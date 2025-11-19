@@ -6,7 +6,7 @@ import java.util.List;
 
 public class ParcelDatabase {
 
-    // validation
+    // ---------------- VALIDATION ----------------
 
     public static boolean customerExists(Connection conn, int customerId) throws SQLException {
         String sql = "SELECT customer_id FROM customers WHERE customer_id = ?";
@@ -24,11 +24,10 @@ public class ParcelDatabase {
         return rs.next();
     }
 
-    // read operations
+    // ---------------- READ OPERATIONS ----------------
 
     public static ResultSet getAllParcels(Connection conn) throws SQLException {
-        String sql = "SELECT * FROM parcels";
-        return conn.prepareStatement(sql).executeQuery();
+        return conn.prepareStatement("SELECT * FROM parcels").executeQuery();
     }
 
     public static ResultSet getParcelById(Connection conn, int parcelId) throws SQLException {
@@ -38,27 +37,24 @@ public class ParcelDatabase {
         return stmt.executeQuery();
     }
 
-    // insert parcel
+    // ---------------- INSERT PARCEL ----------------
 
     public static int insertParcel(Connection conn, int customerId, int courierId, String status) throws SQLException {
 
-        String sql = """
-            INSERT INTO parcels (customer_id, courier_id, status, booking_date)
-            VALUES (?, ?, ?, NOW())
-        """;
+        String sql = "INSERT INTO parcels (customer_id, courier_id, status, booking_date) VALUES (?, ?, ?, NOW())";
 
         PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         stmt.setInt(1, customerId);
         stmt.setInt(2, courierId);
         stmt.setString(3, status);
-
         stmt.executeUpdate();
 
         ResultSet keys = stmt.getGeneratedKeys();
-        return keys.next() ? keys.getInt(1) : -1;
+        if (keys.next()) return keys.getInt(1);
+        return -1;
     }
 
-    // update parcel
+    // ---------------- UPDATE PARCEL ----------------
 
     public static int updateParcel(Connection conn, int parcelId, int customerId, int courierId, String status)
             throws SQLException {
@@ -74,7 +70,7 @@ public class ParcelDatabase {
         return stmt.executeUpdate();
     }
 
-    // delete parcel
+    // ---------------- DELETE PARCEL ----------------
 
     public static int deleteParcel(Connection conn, int parcelId) throws SQLException {
         String sql = "DELETE FROM parcels WHERE parcel_id = ?";
@@ -83,7 +79,7 @@ public class ParcelDatabase {
         return stmt.executeUpdate();
     }
 
-    // book logic
+    // ---------------- BOOKING LOGIC ----------------
 
     public static List<String> getCouriers(Connection conn) throws SQLException {
         List<String> list = new ArrayList<>();
@@ -93,8 +89,9 @@ public class ParcelDatabase {
         ResultSet rs = stmt.executeQuery();
 
         while (rs.next()) {
-            list.add(rs.getInt("courier_id") + " - " +
-                    rs.getString("first_name") + " " + rs.getString("last_name"));
+            int id = rs.getInt("courier_id");
+            String fullName = rs.getString("first_name") + " " + rs.getString("last_name");
+            list.add(id + " - " + fullName);
         }
         return list;
     }
@@ -104,7 +101,8 @@ public class ParcelDatabase {
         PreparedStatement stmt = conn.prepareStatement(sql);
         stmt.setInt(1, customerId);
         ResultSet rs = stmt.executeQuery();
-        return rs.next() ? rs.getString("address") : null;
+        if (rs.next()) return rs.getString("address");
+        return null;
     }
 
     public static void insertParcelStatus(Connection conn,
@@ -112,11 +110,10 @@ public class ParcelDatabase {
                                           int courierId,
                                           String recipientAddress) throws SQLException {
 
-        String sql = """
-            INSERT INTO parcel_status
-                (parcel_id, courier_id, status_update, recipient_address, timestamp, parcel_statuscol)
-            VALUES (?, ?, 'Booked', ?, NOW(), 'Booked')
-        """;
+        String sql =
+                "INSERT INTO parcel_status " +
+                "(parcel_id, courier_id, status_update, recipient_address, timestamp, remarks) " +
+                "VALUES (?, ?, 'Booked', ?, NOW(), 'Booked')";
 
         PreparedStatement stmt = conn.prepareStatement(sql);
         stmt.setInt(1, parcelId);
@@ -125,17 +122,13 @@ public class ParcelDatabase {
         stmt.executeUpdate();
     }
 
-    // find parcel
+    // ---------------- DELIVERY COMPLETION (Corpuz) ----------------
 
     public static ResultSet getParcelForDelivery(Connection conn, int parcelId) throws SQLException {
         String sql = """
-            SELECT 
-                p.parcel_id, p.status, 
-                ps.recipient_address, ps.status_update,
-                c.first_name, c.last_name
+            SELECT p.status, ps.recipient_address
             FROM parcels p
             LEFT JOIN parcel_status ps ON p.parcel_id = ps.parcel_id
-            LEFT JOIN customers c ON p.customer_id = c.customer_id
             WHERE p.parcel_id = ?
             ORDER BY ps.timestamp DESC
             LIMIT 1
@@ -146,133 +139,69 @@ public class ParcelDatabase {
         return stmt.executeQuery();
     }
 
-    // complete delivery
-
     public static boolean completeDelivery(Connection conn, int parcelId, String remarks) throws SQLException {
-        boolean autoCommit = conn.getAutoCommit();
-        try {
-            conn.setAutoCommit(false);
 
-            String checkStatusSQL = "SELECT status FROM parcels WHERE parcel_id = ?";
-            PreparedStatement checkStmt = conn.prepareStatement(checkStatusSQL);
-            checkStmt.setInt(1, parcelId);
-            ResultSet rs = checkStmt.executeQuery();
+        // Update parcels table
+        String sql1 = "UPDATE parcels SET status = 'Delivered' WHERE parcel_id = ?";
+        PreparedStatement ps1 = conn.prepareStatement(sql1);
+        ps1.setInt(1, parcelId);
 
-            if (!rs.next()) throw new SQLException("Parcel not found");
+        int updated = ps1.executeUpdate();
+        if (updated == 0) return false;
 
-            String currentStatus = rs.getString("status");
-            if (!"In Transit".equalsIgnoreCase(currentStatus) &&
-                !"Out for Delivery".equalsIgnoreCase(currentStatus)) {
-                throw new SQLException("Parcel is not in transit. Current: " + currentStatus);
-            }
+        // Insert new parcel_status record
+        String sql2 = """
+            INSERT INTO parcel_status (parcel_id, courier_id, status_update, recipient_address, timestamp, remarks)
+            SELECT parcel_id, courier_id, 'Delivered', recipient_address, NOW(), ?
+            FROM parcel_status
+            WHERE parcel_id = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """;
 
-            String getAddressSQL = """
-                SELECT recipient_address 
-                FROM parcel_status 
-                WHERE parcel_id = ? 
-                ORDER BY timestamp DESC 
-                LIMIT 1
-            """;
+        PreparedStatement ps2 = conn.prepareStatement(sql2);
+        ps2.setString(1, remarks);
+        ps2.setInt(2, parcelId);
+        ps2.executeUpdate();
 
-            PreparedStatement addrStmt = conn.prepareStatement(getAddressSQL);
-            addrStmt.setInt(1, parcelId);
-            ResultSet ars = addrStmt.executeQuery();
-
-            String recipientAddress = ars.next() ? ars.getString("recipient_address") : "";
-
-            PreparedStatement upd = conn.prepareStatement(
-                    "UPDATE parcels SET status = 'Delivered' WHERE parcel_id = ?");
-            upd.setInt(1, parcelId);
-            upd.executeUpdate();
-
-            String insertSQL = """
-                INSERT INTO parcel_status 
-                (parcel_id, courier_id, status_update, recipient_address, timestamp, remarks)
-                SELECT parcel_id, courier_id, 'Delivered', ?, NOW(), ?
-                FROM parcels WHERE parcel_id = ?
-            """;
-
-            PreparedStatement ins = conn.prepareStatement(insertSQL);
-            ins.setString(1, recipientAddress);
-            ins.setString(2, remarks);
-            ins.setInt(3, parcelId);
-            ins.executeUpdate();
-
-            conn.commit();
-            return true;
-
-        } catch (SQLException e) {
-            conn.rollback();
-            throw e;
-        } finally {
-            conn.setAutoCommit(autoCommit);
-        }
+        return true;
     }
 
-    // ------------------------------------------------------------------
-    // --------------------- CANCELLATION LOGIC -------------------------
-    // ------------------------------------------------------------------
+    // ---------------- BOOKING CANCELLATION (Hernane) ----------------
 
     public static boolean cancelBookingByTrackingId(Connection conn, int trackingId) throws SQLException {
 
-        boolean autoCommit = conn.getAutoCommit();
-        try {
-            conn.setAutoCommit(false);
+        // Find record
+        String check = "SELECT parcel_id, status_update FROM parcel_status WHERE tracking_id = ?";
+        PreparedStatement cs = conn.prepareStatement(check);
+        cs.setInt(1, trackingId);
+        ResultSet rs = cs.executeQuery();
 
-            // load booking info
-            String sql = """
-                SELECT 
-                    p.parcel_id,
-                    p.status AS parcel_status,
-                    ps.courier_id,
-                    ps.recipient_address
-                FROM parcel_status ps
-                JOIN parcels p ON ps.parcel_id = p.parcel_id
-                WHERE ps.tracking_id = ?
-                ORDER BY ps.timestamp DESC
-                LIMIT 1
-            """;
+        if (!rs.next()) return false;
 
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, trackingId);
-            ResultSet rs = stmt.executeQuery();
+        int parcelId = rs.getInt("parcel_id");
+        String status = rs.getString("status_update").trim().toLowerCase();
 
-            if (!rs.next())
-                throw new SQLException("Tracking ID does not exist.");
-
-            int parcelId = rs.getInt("parcel_id");
-            int courierId = rs.getInt("courier_id");
-            String address = rs.getString("recipient_address");
-            String status = rs.getString("parcel_status");
-
-            if (!"Booked".equalsIgnoreCase(status))
-                throw new SQLException("Not allowed. Current status: " + status);
-
-            PreparedStatement upd = conn.prepareStatement(
-                    "UPDATE parcels SET status = 'Cancelled' WHERE parcel_id = ?");
-            upd.setInt(1, parcelId);
-            upd.executeUpdate();
-
-            String insertCancel = """
-                INSERT INTO parcel_status
-                    (parcel_id, courier_id, status_update, recipient_address, timestamp, parcel_statuscol)
-                VALUES (?, ?, 'Cancelled', ?, NOW(), 'Cancelled')
-            """;
-
-            PreparedStatement ins = conn.prepareStatement(insertCancel);
-            ins.setInt(1, parcelId);
-            ins.setInt(2, courierId);
-            ins.setString(3, address != null ? address : "");
-            ins.executeUpdate();
-
-            conn.commit();
-            return true;
-
-        } catch (SQLException e) {
-            conn.rollback();
-            throw e;
-        } finally {
-            conn.setAutoCommit(autoCommit);
+        // Cannot cancel these:
+        if (status.equals("in transit") ||
+            status.equals("out for delivery") ||
+            status.equals("delivered") ||
+            status.equals("cancelled")) {
+            return false;
         }
+
+        // Update parcel table
+        String updParcel = "UPDATE parcels SET status = 'Cancelled' WHERE parcel_id = ?";
+        PreparedStatement p1 = conn.prepareStatement(updParcel);
+        p1.setInt(1, parcelId);
+        p1.executeUpdate();
+
+        // Update parcel_status entry
+        String updStatus = "UPDATE parcel_status SET status_update = 'Cancelled', remarks = 'Cancelled' WHERE tracking_id = ?";
+        PreparedStatement p2 = conn.prepareStatement(updStatus);
+        p2.setInt(1, trackingId);
+        p2.executeUpdate();
+
+        return true;
     }
 }
