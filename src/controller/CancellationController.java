@@ -17,6 +17,8 @@ public class CancellationController {
     }
 
     public void openCancelForm(JFrame parent) {
+
+
         CancelForm form = new CancelForm(parent, "Cancel Booking");
 
         form.btnConfirm.addActionListener(e -> {
@@ -74,7 +76,7 @@ public class CancellationController {
             }
         });
 
-        form.btnCancel.addActionListener(e -> form.dispose());
+        form.btnCancel.addActionListener(e -> {form.dispose();});
 
         form.setVisible(true);
     }

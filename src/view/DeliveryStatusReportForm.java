@@ -176,7 +176,8 @@ public class DeliveryStatusReportForm extends JDialog {
                                 DATE(timestamp) AS delivery_date,
                                 COUNT(*) AS total_deliveries,
                                 SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) AS total_successful_deliveries,
-                                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries
+                                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries,
+                                ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1.0 ELSE 0 END) / COUNT(parcel_id) * 100), 2) as success_rate
                             FROM parcel_status
                             WHERE DATE(timestamp) = %s
                             GROUP BY DATE(timestamp)
@@ -190,7 +191,8 @@ public class DeliveryStatusReportForm extends JDialog {
                                 DATE_FORMAT(timestamp, '%%Y-%%m') AS delivery_month,
                                 COUNT(*) AS total_deliveries,
                                 SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) AS total_successful_deliveries,
-                                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries
+                                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries,
+                                ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1.0 ELSE 0 END) / COUNT(parcel_id) * 100), 2) as success_rate
                             FROM parcel_status
                             WHERE YEAR(timestamp) = %d AND MONTH(timestamp) = %d
                             GROUP BY DATE_FORMAT(timestamp, '%%Y-%%m');
@@ -201,14 +203,14 @@ public class DeliveryStatusReportForm extends JDialog {
                 return String.format(
                         """
                             SELECT
-                                YEAR(timestamp) AS delivery_year,
-                                COUNT(*) AS total_deliveries,
-                                SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) AS total_successful_deliveries,
-                                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries
-                                ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) / COUNT(pparcel_id) * 100), 2) as success_rate
-                            FROM parcel_status
-                            WHERE YEAR(timestamp) = %d
-                            GROUP BY YEAR(timestamp)
+                                 YEAR(timestamp) AS delivery_year,
+                                    COUNT(*) AS total_deliveries,
+                                    SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) AS total_successful_deliveries,
+                                    SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries,
+                                    ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1.0 ELSE 0 END) / COUNT(parcel_id) * 100), 2) AS success_rate
+                                FROM parcel_status
+                                WHERE YEAR(timestamp) = %d
+                                GROUP BY YEAR(timestamp)
                         """,
                         year);
 

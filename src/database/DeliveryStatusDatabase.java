@@ -10,7 +10,8 @@ public class DeliveryStatusDatabase {
                     DATE(timestamp) AS delivery_date,
                     COUNT(*) AS total_deliveries,
                     SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) AS total_successful_deliveries,
-                    SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries
+                    SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries,
+                    ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1.0 ELSE 0 END) / COUNT(parcel_id) * 100), 2) as success_rate
                 FROM parcel_status
                 WHERE DATE(timestamp) = ?
                 GROUP BY DATE(timestamp)
@@ -27,7 +28,8 @@ public class DeliveryStatusDatabase {
                 DATE_FORMAT(timestamp, '%Y-%m') AS delivery_month,
                 COUNT(*) AS total_deliveries,
                 SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) AS total_successful_deliveries,
-                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries
+                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries,
+                ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1.0 ELSE 0 END) / COUNT(parcel_id) * 100), 2) as success_rate
             FROM parcel_status
             WHERE YEAR(timestamp) = ? AND MONTH(timestamp) = ?  -- Replace with specific year and month
             GROUP BY DATE_FORMAT(timestamp, '%Y-%m');
@@ -45,8 +47,8 @@ public class DeliveryStatusDatabase {
                 YEAR(timestamp) AS delivery_year,
                 COUNT(*) AS total_deliveries,
                 SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) AS total_successful_deliveries,
-                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries
-                ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1 ELSE 0 END) / COUNT(pparcel_id) * 100), 2) as success_rate
+                SUM(CASE WHEN status_update IN ('Cancelled', 'Returned', 'Failed') THEN 1 ELSE 0 END) AS total_unsuccessful_deliveries,
+                ROUND((SUM(CASE WHEN status_update = 'Delivered' THEN 1.0 ELSE 0 END) / COUNT(parcel_id) * 100), 2) as success_rate
             FROM parcel_status
             WHERE YEAR(timestamp) = ?
             GROUP BY YEAR(timestamp)
