@@ -84,11 +84,23 @@ public class CustomerForm extends JDialog {
     }
 
     // getters
-    public String getFirstName() { return txtFirstName.getText().trim(); }
-    public String getLastName() { return txtLastName.getText().trim(); }
-    public String getAddress() { return txtAddress.getText().trim(); }
-    public String getContactNo() { return txtContactNo.getText().trim(); }
-    public String getEmail() { return txtEmail.getText().trim(); }
-    public Date getJoinDate() { return Date.valueOf(txtJoinDate.getText().trim()); }
+    public String getFirstName() { 
+        return txtFirstName.getText().trim(); 
+    }
+    public String getLastName() { 
+        return txtLastName.getText().trim(); 
+    }
+    public String getAddress() { 
+        return txtAddress.getText().trim(); 
+    }
+    public String getContactNo() { 
+        return txtContactNo.getText().trim(); 
+    }
+    public String getEmail() { 
+        return txtEmail.getText().trim(); 
+    }
+    public Date getJoinDate() { 
+        return Date.valueOf(txtJoinDate.getText().trim()); 
+    }
 
 }

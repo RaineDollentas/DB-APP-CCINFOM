@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * For transaction page
+ * TRANSACTION PAGE
  */
 public class TransactionsPanel extends JPanel {
 

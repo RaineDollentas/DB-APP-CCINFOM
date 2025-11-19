@@ -18,6 +18,12 @@ public class RecordManagementPanel extends JPanel {
     public JButton btnEdit;
     public JButton btnDelete;
 
+    // tracking buttons
+    public JTextField txtSearch;
+    public JButton btnFilter;
+    public JButton btnSort;
+    public JButton btnRefresh;
+
     public JLabel titleLabel;
     public JTable table;
 
@@ -49,7 +55,7 @@ public class RecordManagementPanel extends JPanel {
 
         headerContainer.add(headerPanel, BorderLayout.NORTH);
 
-        // add delete edit
+        // add delete edit + (filter, sort, search for tracking)
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(Color.WHITE);
         topPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
@@ -60,7 +66,7 @@ public class RecordManagementPanel extends JPanel {
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         actionPanel.setBackground(Color.WHITE);
 
-        // buttons
+        // CRUD buttons (always visible except in tracking)
         btnAdd = createHeaderButton("Add");
         btnEdit = createHeaderButton("Edit");
         btnDelete = createHeaderButton("Delete");
@@ -68,6 +74,21 @@ public class RecordManagementPanel extends JPanel {
         actionPanel.add(btnAdd);
         actionPanel.add(btnEdit);
         actionPanel.add(btnDelete);
+
+        txtSearch = new JTextField(12);
+        btnFilter = createHeaderButton("Filter");
+        btnSort = createHeaderButton("Sort");
+        btnRefresh = createHeaderButton("Refresh");
+
+        txtSearch.setVisible(false);
+        btnFilter.setVisible(false);
+        btnSort.setVisible(false);
+        btnRefresh.setVisible(false);
+
+        actionPanel.add(txtSearch);
+        actionPanel.add(btnFilter);
+        actionPanel.add(btnSort);
+        actionPanel.add(btnRefresh);
 
         topPanel.add(titleLabel, BorderLayout.WEST);
         topPanel.add(actionPanel, BorderLayout.EAST);
@@ -86,8 +107,6 @@ public class RecordManagementPanel extends JPanel {
 
     /**
      * Helper for button design
-     * @param text the text label for the button
-     * @return button
      */
     private JButton createHeaderButton(String text) {
         JButton btn = new JButton(text);

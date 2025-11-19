@@ -6,11 +6,10 @@ import controller.NavigationController;
 import controller.ParcelBookController;
 import controller.RecordManagementController;
 import controller.TransactionsController;
+import controller.ReportsController; // ADD THIS IMPORT
 
 /**
  * Main application window
- * Contains the application sidebar and a cardbased main panel that
- * switches between transactions, record management, and reports 
  */
 public class MainFrame extends JFrame {
     private JPanel mainPanel;
@@ -21,24 +20,22 @@ public class MainFrame extends JFrame {
      * Constructs the main frame and initializes the UI
      */
     public MainFrame() {
-        setTitle("Lalamove-Lite"); // title
+        setTitle("Lalamove-Lite");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1100, 700); 
+        setSize(1100, 700);
         setLocationRelativeTo(null);
-        setResizable(false); // fixed size
+        setResizable(false);
 
         setLayout(new BorderLayout());
 
         // sidebar
-        sidebar = new SidebarPanel();  // Transactions, Records, Reports buttons
+        sidebar = new SidebarPanel();
 
         // main panel w card layout
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
         mainPanel.setBackground(new Color(28, 28, 28));
 
-
-    
         // load Transactions Panel
         TransactionsPanel transactionsPanel = new TransactionsPanel();
         mainPanel.add(transactionsPanel, "TransactionsMenu");
@@ -55,8 +52,12 @@ public class MainFrame extends JFrame {
         // call controller for record management panel
         new RecordManagementController(recordPanel);
 
-        // load Reports Panel, pero no logic yet or anything
-        mainPanel.add(new ReportsPanel(), "ReportsMenu");          
+        // load Reports Panel
+        ReportsPanel reportsPanel = new ReportsPanel();
+        mainPanel.add(reportsPanel, "ReportsMenu");
+
+        // NEWLY ADDED: Reports Controller pls check if works
+        new ReportsController(reportsPanel, mainPanel, cardLayout);
 
         // show transactions menu by default
         cardLayout.show(mainPanel, "TransactionsMenu");

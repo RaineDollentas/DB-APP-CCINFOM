@@ -71,7 +71,7 @@ public class ParcelBookController {
                 int courierId = Integer.parseInt(selected.split(" - ")[0]);
 
                 // insert parcel
-                int parcelId = ParcelDatabase.insertParcel(conn, customerId, courierId);
+                int parcelId = ParcelDatabase.insertParcel(conn, customerId, courierId, "Booked");
 
                 if (parcelId == -1) {
                     JOptionPane.showMessageDialog(form, "Error saving parcel.");

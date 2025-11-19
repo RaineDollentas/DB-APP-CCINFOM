@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * panel for reports, not started
+ * REPORT PAGE
  */
 public class ReportsPanel extends JPanel {
 

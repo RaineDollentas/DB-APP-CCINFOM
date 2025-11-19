@@ -4,11 +4,10 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-// databse operations for parcels (made this for booking parcels), btw no add edit delete here yet
-// just the necessary ones for booking a parcel, add or modify nalang if needed
 public class ParcelDatabase {
 
-    // check if customer exists by ID
+    // validation
+
     public static boolean customerExists(Connection conn, int customerId) throws SQLException {
         String sql = "SELECT customer_id FROM customers WHERE customer_id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
@@ -17,19 +16,75 @@ public class ParcelDatabase {
         return rs.next();
     }
 
-    // get customer address by ID, auto fills pick up address
-    public static String getCustomerAddress(Connection conn, int customerId) throws SQLException {
-        String sql = "SELECT address FROM customers WHERE customer_id = ?";
+    public static boolean courierExists(Connection conn, int courierId) throws SQLException {
+        String sql = "SELECT courier_id FROM couriers WHERE courier_id = ?";
         PreparedStatement stmt = conn.prepareStatement(sql);
-        stmt.setInt(1, customerId);
+        stmt.setInt(1, courierId);
         ResultSet rs = stmt.executeQuery();
-
-        if (rs.next()) return rs.getString("address");
-        return null;
+        return rs.next();
     }
 
-    // get list of couriers for dropdown so customers can just pick between available couriers
-    // btw no availability check to, only assumes all couriers are available since im not sure yet how we're gonna do that
+    // read operations
+
+    public static ResultSet getAllParcels(Connection conn) throws SQLException {
+        String sql = "SELECT * FROM parcels";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        return stmt.executeQuery();
+    }
+
+    public static ResultSet getParcelById(Connection conn, int parcelId) throws SQLException {
+        String sql = "SELECT * FROM parcels WHERE parcel_id = ?";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, parcelId);
+        return stmt.executeQuery();
+    }
+
+    // insert parcel
+
+    public static int insertParcel(Connection conn, int customerId, int courierId, String status) throws SQLException {
+
+        String sql = "INSERT INTO parcels (customer_id, courier_id, status, booking_date) " +
+                     "VALUES (?, ?, ?, NOW())";
+
+        PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        stmt.setInt(1, customerId);
+        stmt.setInt(2, courierId);
+        stmt.setString(3, status);
+
+        stmt.executeUpdate();
+
+        ResultSet keys = stmt.getGeneratedKeys();
+        if (keys.next()) return keys.getInt(1);
+        return -1;
+    }
+
+    // update parcel
+
+    public static int updateParcel(Connection conn, int parcelId, int customerId, int courierId, String status)
+            throws SQLException {
+
+        String sql = "UPDATE parcels SET customer_id = ?, courier_id = ?, status = ? WHERE parcel_id = ?";
+
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, customerId);
+        stmt.setInt(2, courierId);
+        stmt.setString(3, status);
+        stmt.setInt(4, parcelId);
+
+        return stmt.executeUpdate();
+    }
+
+    // delete parcel
+
+    public static int deleteParcel(Connection conn, int parcelId) throws SQLException {
+        String sql = "DELETE FROM parcels WHERE parcel_id = ?";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, parcelId);
+        return stmt.executeUpdate();
+    }
+
+    // booking logic 
+
     public static List<String> getCouriers(Connection conn) throws SQLException {
         List<String> list = new ArrayList<>();
 
@@ -42,40 +97,27 @@ public class ParcelDatabase {
             String fullName = rs.getString("first_name") + " " + rs.getString("last_name");
             list.add(id + " - " + fullName);
         }
-
         return list;
     }
 
-    // insert parcel, returns generated parcel ID (auto generated too)
-    public static int insertParcel(Connection conn, int customerId, int courierId) throws SQLException {
-
-        String sql = """
-            INSERT INTO parcels (customer_id, courier_id, status, booking_date)
-            VALUES (?, ?, 'Booked', NOW())
-        """;
-
-        PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+    public static String getCustomerAddress(Connection conn, int customerId) throws SQLException {
+        String sql = "SELECT address FROM customers WHERE customer_id = ?";
+        PreparedStatement stmt = conn.prepareStatement(sql);
         stmt.setInt(1, customerId);
-        stmt.setInt(2, courierId);
-        stmt.executeUpdate();
-
-        ResultSet keys = stmt.getGeneratedKeys();
-        if (keys.next()) return keys.getInt(1);
-
-        return -1;
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next()) return rs.getString("address");
+        return null;
     }
 
-    // insert parcel status
     public static void insertParcelStatus(Connection conn,
                                           int parcelId,
                                           int courierId,
                                           String recipientAddress) throws SQLException {
 
-        String sql = """
-            INSERT INTO parcel_status 
-            (parcel_id, courier_id, status_update, recipient_address, timestamp, parcel_statuscol)
-            VALUES (?, ?, 'Booked', ?, NOW(), 'Booked')
-        """;
+        String sql =
+            "INSERT INTO parcel_status " +
+            "(parcel_id, courier_id, status_update, recipient_address, timestamp, parcel_statuscol) " +
+            "VALUES (?, ?, 'Booked', ?, NOW(), 'Booked')";
 
         PreparedStatement stmt = conn.prepareStatement(sql);
         stmt.setInt(1, parcelId);
