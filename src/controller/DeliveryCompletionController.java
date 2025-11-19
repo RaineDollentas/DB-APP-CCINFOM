@@ -6,33 +6,84 @@ import database.DBConnection;
 import database.ParcelDatabase;
 
 import javax.swing.*;
-import java.awt.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class DeliveryCompletionController {
 
-    public DeliveryCompletionController(TransactionsPanel transactionsPanel, JFrame parentFrame) {
+    private TransactionsPanel view;
+    private DeliveryCompletionForm currentForm = null;
 
-        transactionsPanel.btnCompleteDelivery.addActionListener(e -> openDeliveryCompletionForm(parentFrame));
+    public DeliveryCompletionController(TransactionsPanel transactionsPanel, JFrame parentFrame) {
+        this.view = transactionsPanel;
+        initController();
     }
 
-    private void openDeliveryCompletionForm(JFrame parentFrame) {
-        DeliveryCompletionForm form = new DeliveryCompletionForm(parentFrame);
+    private void initController() {
+        // Remove any existing listeners first to prevent duplicates
+        for (var listener : view.btnCompleteDelivery.getActionListeners()) {
+            view.btnCompleteDelivery.removeActionListener(listener);
+        }
 
-        // Auto-fill when user presses ENTER
+        // Add our listener
+        view.btnCompleteDelivery.addActionListener(e -> openDeliveryCompletionForm());
+    }
+
+    private void openDeliveryCompletionForm() {
+        // If form already exists and is visible, just bring it to front
+        if (currentForm != null && currentForm.isVisible()) {
+            currentForm.toFront();
+            return;
+        }
+
+        // Create new form
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(view);
+        currentForm = new DeliveryCompletionForm(parentFrame);
+
+        // Add window listener to handle closing properly
+        currentForm.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                currentForm = null;
+            }
+
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                currentForm = null;
+            }
+        });
+
+        // Set up form buttons (do this ONLY once)
+        setupFormActions(currentForm);
+
+        currentForm.setVisible(true);
+    }
+
+    private void setupFormActions(DeliveryCompletionForm form) {
+        // Clear existing listeners first
+        for (var listener : form.txtParcelId.getActionListeners()) {
+            form.txtParcelId.removeActionListener(listener);
+        }
+        for (var listener : form.btnComplete.getActionListeners()) {
+            form.btnComplete.removeActionListener(listener);
+        }
+        for (var listener : form.btnCancel.getActionListeners()) {
+            form.btnCancel.removeActionListener(listener);
+        }
+
+        // When parcel ID is entered, auto-fill details
         form.txtParcelId.addActionListener(e -> loadParcelDetails(form));
 
+        // Handle save button click
         form.btnComplete.addActionListener(e -> completeDelivery(form));
-        form.btnCancel.addActionListener(e -> form.dispose());
 
-        form.setVisible(true);
+        // Handle cancel button
+        form.btnCancel.addActionListener(e -> form.dispose());
     }
 
     private void loadParcelDetails(DeliveryCompletionForm form) {
         int parcelId = form.getParcelId();
-
         if (parcelId <= 0) {
             JOptionPane.showMessageDialog(form, "Please enter a valid Parcel ID");
             return;
@@ -48,15 +99,11 @@ public class DeliveryCompletionController {
                 form.setCurrentStatus(status);
                 form.setRecipientAddress(address != null ? address : "Address not found");
 
-                String normalized = status.trim().toLowerCase();
-
-                // Only allow delivery completion when it makes sense
-                if (!normalized.equals("in transit") && !normalized.equals("out for delivery")) {
+                // Check if parcel can be delivered
+                if (!"In Transit".equalsIgnoreCase(status) && !"Out for Delivery".equalsIgnoreCase(status)) {
                     JOptionPane.showMessageDialog(form,
-                            "Cannot complete delivery.\nParcel status must be 'In Transit' or 'Out for Delivery'.\n\nCurrent Status: "
-                                    + status);
+                            "Cannot complete delivery. Parcel status must be 'In Transit' or 'Out for Delivery'. Current status: " + status);
                 }
-
             } else {
                 JOptionPane.showMessageDialog(form, "Parcel not found!");
                 form.setCurrentStatus("Not Found");
