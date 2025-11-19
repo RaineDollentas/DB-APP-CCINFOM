@@ -8,65 +8,44 @@ import java.awt.*;
 
 public class TransactionsController {
 
-    private ParcelReturn parcelReturn;
+    private final ParcelReturn parcelReturn;
+    private final JFrame parentFrame;
 
     public TransactionsController(TransactionsPanel view, JPanel mainPanel, CardLayout cardLayout) {
+
         this.parcelReturn = new ParcelReturn();
 
-        // Book parcel button (handled by ParcelBookController)
+        // Get the parent frame safely
+        this.parentFrame = (JFrame) SwingUtilities.getWindowAncestor(mainPanel);
+
+        // ==== BOOK PARCEL ====
         view.btnBookParcel.addActionListener(e -> {
-            // This is handled by ParcelBookController
+            // handled externally
         });
 
-        // Complete Delivery button
+        // ==== COMPLETE DELIVERY (now real form) ====
         view.btnCompleteDelivery.addActionListener(e -> {
-            completeDelivery();
+            DeliveryCompletionController dcc = new DeliveryCompletionController(view, parentFrame);
         });
 
-        // Cancel Booking button
+        // ==== CANCEL BOOKING (uses your cancellation controller) ====
         view.btnCancelBooking.addActionListener(e -> {
-            cancelBooking();
+            CancellationController cc = new CancellationController(view, parentFrame);
         });
 
-        // Parcel Return button
-        view.btnParcelReturn.addActionListener(e -> {
-            showParcelReturnDialog();
-        });
+        // ==== PARCEL RETURN ====
+        view.btnParcelReturn.addActionListener(e -> showParcelReturnDialog());
     }
 
-    private void completeDelivery() {
-        String parcelIdStr = JOptionPane.showInputDialog(null, "Enter Parcel ID to complete delivery:", "Complete Delivery", JOptionPane.QUESTION_MESSAGE);
-        if (parcelIdStr == null || parcelIdStr.trim().isEmpty()) return;
-
-        try {
-            int parcelId = Integer.parseInt(parcelIdStr);
-            // You would need to create a CompleteDelivery class similar to ParcelReturn
-            JOptionPane.showMessageDialog(null, "Complete Delivery functionality to be implemented");
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "Invalid Parcel ID format!");
-        }
-    }
-
-    private void cancelBooking() {
-        String parcelIdStr = JOptionPane.showInputDialog(null, "Enter Parcel ID to cancel:", "Cancel Booking", JOptionPane.QUESTION_MESSAGE);
-        if (parcelIdStr == null || parcelIdStr.trim().isEmpty()) return;
-
-        try {
-            int parcelId = Integer.parseInt(parcelIdStr);
-            // You would need to create a ParcelCancellation class
-            JOptionPane.showMessageDialog(null, "Cancel Booking functionality to be implemented");
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "Invalid Parcel ID format!");
-        }
-    }
+    // ---------------------------------------------------------------------------
+    //  PARCEL RETURN DIALOG (your existing working return process)
+    // ---------------------------------------------------------------------------
 
     private void showParcelReturnDialog() {
-        JDialog returnDialog = new JDialog();
-        returnDialog.setTitle("Parcel Return Management");
+        JDialog returnDialog = new JDialog(parentFrame, "Parcel Return Management", true);
         returnDialog.setSize(500, 400);
-        returnDialog.setLocationRelativeTo(null);
+        returnDialog.setLocationRelativeTo(parentFrame);
         returnDialog.setLayout(new BorderLayout());
-        returnDialog.setModal(true);
 
         // Main panel
         JPanel mainPanel = new JPanel(new GridLayout(5, 2, 10, 10));
@@ -88,7 +67,7 @@ public class TransactionsController {
         mainPanel.add(new JLabel("Remarks:"));
         mainPanel.add(txtRemarks);
 
-        // Button panel
+        // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout());
         JButton btnCheckParcel = new JButton("Check Parcel");
         JButton btnInitiateReturn = new JButton("Initiate Return");
@@ -103,12 +82,13 @@ public class TransactionsController {
         resultArea.setEditable(false);
         JScrollPane resultScroll = new JScrollPane(resultArea);
 
-        // Add components to dialog
+        // Add to dialog
         returnDialog.add(mainPanel, BorderLayout.NORTH);
         returnDialog.add(buttonPanel, BorderLayout.CENTER);
         returnDialog.add(resultScroll, BorderLayout.SOUTH);
 
-        // Button actions
+        // ===== BUTTON ACTIONS =====
+
         btnCheckParcel.addActionListener(e -> {
             String parcelIdStr = txtParcelId.getText().trim();
             if (parcelIdStr.isEmpty()) {
@@ -119,11 +99,13 @@ public class TransactionsController {
             try {
                 int parcelId = Integer.parseInt(parcelIdStr);
                 String details = parcelReturn.getParcelDetailsForReturn(parcelId);
-                if (details != null) {
-                    resultArea.setText("Parcel Details:\n" + details);
-                } else {
-                    resultArea.setText("Parcel not found or error retrieving details.");
-                }
+
+                resultArea.setText(
+                        details != null
+                                ? "Parcel Details:\n" + details
+                                : "Parcel not found or error retrieving details."
+                );
+
             } catch (NumberFormatException ex) {
                 resultArea.setText("Invalid Parcel ID format!");
             }
@@ -135,7 +117,7 @@ public class TransactionsController {
             String reason = cbReturnReason.getSelectedItem().toString();
 
             if (parcelIdStr.isEmpty() || courierIdStr.isEmpty()) {
-                resultArea.setText("Please enter both Parcel ID and Return Courier ID.");
+                resultArea.setText("Both Parcel ID and Courier ID are required.");
                 return;
             }
 
@@ -144,14 +126,13 @@ public class TransactionsController {
                 int courierId = Integer.parseInt(courierIdStr);
 
                 int result = parcelReturn.initiateParcelReturn(parcelId, courierId, reason);
-                if (result == 1) {
-                    resultArea.setText("SUCCESS: Return initiated for Parcel ID: " + parcelId +
-                            "\nReturn Courier: " + courierId +
-                            "\nReason: " + reason);
-                } else {
-                    resultArea.setText("FAILED: Could not initiate return.\n" +
-                            "Make sure parcel is delivered and IDs are valid.");
-                }
+
+                resultArea.setText(
+                        (result == 1)
+                                ? "SUCCESS: Return initiated.\nCourier: " + courierId + "\nReason: " + reason
+                                : "FAILED: Could not initiate return."
+                );
+
             } catch (NumberFormatException ex) {
                 resultArea.setText("Invalid ID format!");
             }
@@ -162,24 +143,22 @@ public class TransactionsController {
             String remarks = txtRemarks.getText().trim();
 
             if (parcelIdStr.isEmpty()) {
-                resultArea.setText("Please enter a Parcel ID.");
+                resultArea.setText("Enter Parcel ID.");
                 return;
             }
 
-            if (remarks.isEmpty()) {
-                remarks = "Return completed successfully";
-            }
+            if (remarks.isEmpty()) remarks = "Return completed successfully";
 
             try {
                 int parcelId = Integer.parseInt(parcelIdStr);
                 int result = parcelReturn.completeParcelReturn(parcelId, remarks);
-                if (result == 1) {
-                    resultArea.setText("SUCCESS: Return completed for Parcel ID: " + parcelId +
-                            "\nRemarks: " + remarks);
-                } else {
-                    resultArea.setText("FAILED: Could not complete return.\n" +
-                            "Make sure return was initiated and parcel is in return transit.");
-                }
+
+                resultArea.setText(
+                        (result == 1)
+                                ? "SUCCESS: Return completed.\nRemarks: " + remarks
+                                : "FAILED: Could not complete return."
+                );
+
             } catch (NumberFormatException ex) {
                 resultArea.setText("Invalid Parcel ID format!");
             }

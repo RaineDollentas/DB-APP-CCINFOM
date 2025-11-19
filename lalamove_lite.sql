@@ -42,3 +42,6 @@ CREATE TABLE parcel_status (
     FOREIGN KEY (parcel_id) REFERENCES parcels(parcel_id),
     FOREIGN KEY (courier_id) REFERENCES couriers(courier_id)
 );
+
+USE lalamove_lite;
+ALTER TABLE parcel_status ADD COLUMN remarks TEXT; --added a remarks column to parcel_status table
