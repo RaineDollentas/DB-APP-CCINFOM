@@ -42,9 +42,6 @@ public class ReportsPanel extends JPanel {
         gbc.gridx = 1; 
         gbc.gridy = 1;
         add(btnDeliveryTrends, gbc);
-
-        // Connect controller
-        new controller.ReportsController(this);
     }
 
     /**
