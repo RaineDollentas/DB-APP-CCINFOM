@@ -38,7 +38,6 @@ CREATE TABLE parcel_status (
     status_update VARCHAR(15),
     recipient_address VARCHAR(100),
     timestamp DATETIME,
-    parcel_statuscol VARCHAR(45),
     FOREIGN KEY (parcel_id) REFERENCES parcels(parcel_id),
     FOREIGN KEY (courier_id) REFERENCES couriers(courier_id)
 );
