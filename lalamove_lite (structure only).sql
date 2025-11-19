@@ -25,7 +25,7 @@ CREATE TABLE parcels (
     parcel_id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT,
     courier_id INT,
-    status VARCHAR(12),
+    status VARCHAR(50),
     booking_date DATETIME,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
     FOREIGN KEY (courier_id) REFERENCES couriers(courier_id)
@@ -35,7 +35,7 @@ CREATE TABLE parcel_status (
     tracking_id INT AUTO_INCREMENT PRIMARY KEY,
     parcel_id INT,
     courier_id INT,
-    status_update VARCHAR(15),
+    status_update VARCHAR(50),
     recipient_address VARCHAR(100),
     timestamp DATETIME,
     remarks TEXT,
