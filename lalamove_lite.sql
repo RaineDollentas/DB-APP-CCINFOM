@@ -38,9 +38,7 @@ CREATE TABLE parcel_status (
     status_update VARCHAR(15),
     recipient_address VARCHAR(100),
     timestamp DATETIME,
+    remarks TEXT,
     FOREIGN KEY (parcel_id) REFERENCES parcels(parcel_id),
     FOREIGN KEY (courier_id) REFERENCES couriers(courier_id)
 );
-
-USE lalamove_lite;
-ALTER TABLE parcel_status ADD COLUMN remarks TEXT; --added a remarks column to parcel_status table

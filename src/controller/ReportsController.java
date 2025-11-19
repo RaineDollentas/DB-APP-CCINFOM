@@ -4,6 +4,7 @@ import view.ReportsPanel;
 import view.CustomerTrendsReportDialog; //corpuz
 import view.CourierPerformanceReportForm;
 import view.DeliveryTrendsReportForm;
+import view.DeliveryStatusReportForm;
 
 import javax.swing.*;
 import java.awt.*;
@@ -72,17 +73,9 @@ public class ReportsController {
      * Shows a basic info dialog for Delivery Status reports.
      */
     private void showDeliveryStatusReport() {
-        JOptionPane.showMessageDialog(
-                null,
-                "Delivery Status Report\n\n" +
-                        "This report would show:\n" +
-                        "- Total deliveries\n" +
-                        "- Successful deliveries\n" +
-                        "- Unsuccessful deliveries\n" +
-                        "For a selected period (Daily / Monthly / Yearly)",
-                "Delivery Status Report",
-                JOptionPane.INFORMATION_MESSAGE
-        );
+        DeliveryStatusReportForm form = new DeliveryStatusReportForm(null);
+        form.setLocationRelativeTo(null); // Center on screen
+        form.setVisible(true);
     }
 
     /**
