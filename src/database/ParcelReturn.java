@@ -162,7 +162,7 @@ public class ParcelReturn {
 
     private int updateParcelAndStatus(Connection conn, int parcelId, String status,
                                       int courierId, String recipientAddress, String returnReason) throws SQLException {
-        // Update main parcel status - use short status only
+
         if (updateParcelMainStatus(conn, parcelId, "Return Initiated") == 0) {
             return 0;
         }
@@ -170,16 +170,16 @@ public class ParcelReturn {
         // Generate a more unique tracking ID
         int trackingId = generateUniqueTrackingId(conn);
 
-        // Insert new status record for return - TRUNCATE to avoid data too long
-        String statusUpdate = truncateStatus(status + " - " + returnReason, 50); // Adjust length as needed
-
+        // Insert new status record for return
         PreparedStatement pStmt = conn.prepareStatement(
-                "INSERT INTO parcel_status (tracking_id, parcel_id, courier_id, status_update, recipient_address, timestamp) VALUES (?,?,?,?,?,NOW())");
+                "INSERT INTO parcel_status (tracking_id, parcel_id, courier_id, status_update, recipient_address, timestamp, remarks) " +
+                        "VALUES (?, ?, ?, ?, ?, NOW(), ?)");
         pStmt.setInt(1, trackingId);
         pStmt.setInt(2, parcelId);
         pStmt.setInt(3, courierId);
-        pStmt.setString(4, statusUpdate);
+        pStmt.setString(4, "Return to Sender");
         pStmt.setString(5, recipientAddress);
+        pStmt.setString(6, "Return initiated. Reason: " + returnReason);
 
         return pStmt.executeUpdate();
     }
@@ -190,7 +190,7 @@ public class ParcelReturn {
         ResultSet rs = pStmt.executeQuery();
         if (rs.next()) {
             String status = rs.getString("status");
-            // More flexible status check for return transit
+
             return status != null && status.toLowerCase().contains("return");
         }
         return false;
@@ -215,16 +215,18 @@ public class ParcelReturn {
                                        String status, String recipientAddress, String remarks) throws SQLException {
         int trackingId = generateUniqueTrackingId(conn);
 
-        // Truncate the status to avoid data too long error
-        String statusUpdate = truncateStatus(status + " - " + remarks, 50);
+
+        String finalRemarks = "Return completed. " + (remarks != null && !remarks.isEmpty() ? "Notes: " + remarks : "No additional notes");
 
         PreparedStatement pStmt = conn.prepareStatement(
-                "INSERT INTO parcel_status (tracking_id, parcel_id, courier_id, status_update, recipient_address, timestamp) VALUES (?,?,?,?,?,NOW())");
+                "INSERT INTO parcel_status (tracking_id, parcel_id, courier_id, status_update, recipient_address, timestamp, remarks) " +
+                        "VALUES (?, ?, ?, ?, ?, NOW(), ?)");
         pStmt.setInt(1, trackingId);
         pStmt.setInt(2, parcelId);
         pStmt.setInt(3, courierId);
-        pStmt.setString(4, statusUpdate);
+        pStmt.setString(4, "Returned");
         pStmt.setString(5, recipientAddress);
+        pStmt.setString(6, finalRemarks);
 
         return pStmt.executeUpdate();
     }
@@ -240,18 +242,31 @@ public class ParcelReturn {
      * Generates a more unique tracking ID to avoid conflicts
      */
     private int generateUniqueTrackingId(Connection conn) throws SQLException {
-        // Use timestamp combined with random component for better uniqueness
+
         long timestamp = System.currentTimeMillis();
         int random = (int) (Math.random() * 1000);
         return Math.abs((int) (timestamp % Integer.MAX_VALUE) + random);
     }
 
     /**
-     * Truncates status string to specified maximum length to avoid database errors
+     * Get return history for a parcel
      */
-    private String truncateStatus(String status, int maxLength) {
-        if (status == null) return "";
-        if (status.length() <= maxLength) return status;
-        return status.substring(0, maxLength - 3) + "...";
+    public ResultSet getParcelReturnHistory(Connection conn, int parcelId) throws SQLException {
+        String sql = """
+            SELECT 
+                tracking_id,
+                status_update,
+                timestamp,
+                remarks,
+                courier_id
+            FROM parcel_status 
+            WHERE parcel_id = ? 
+            AND (status_update LIKE '%Return%' OR remarks LIKE '%Return%')
+            ORDER BY timestamp DESC
+        """;
+
+        PreparedStatement pStmt = conn.prepareStatement(sql);
+        pStmt.setInt(1, parcelId);
+        return pStmt.executeQuery();
     }
 }
