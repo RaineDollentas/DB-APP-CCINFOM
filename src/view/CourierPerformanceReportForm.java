@@ -1,9 +1,11 @@
 package view;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import database.DBConnection;
 import database.CourierReportDatabase;
@@ -103,10 +105,7 @@ public class CourierPerformanceReportForm extends JDialog {
 
         btnClose.addActionListener(e -> dispose());
 
-        /** -----------------------------
-         * FIX: Date picker now activates ONLY on click,
-         *      NOT on focus.
-         * ----------------------------- */
+
         txtDate.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -155,8 +154,53 @@ public class CourierPerformanceReportForm extends JDialog {
         }
 
         try (Connection conn = DBConnection.getConnection()) {
-            String query = buildQuery(period, year);
-            LoadTable.loadTable(reportTable, query);
+            ResultSet rs;
+            int month = cbMonth.getSelectedIndex() + 1;
+            String date = txtDate.getText().trim();
+
+            // Use the fixed database methods
+            switch (period) {
+                case "Daily":
+                    rs = CourierReportDatabase.getDailyCourierPerformance(conn, date);
+                    break;
+                case "Monthly":
+                    rs = CourierReportDatabase.getMonthlyCourierPerformance(conn, year, month);
+                    break;
+                case "Yearly":
+                    rs = CourierReportDatabase.getYearlyCourierPerformance(conn, year);
+                    break;
+                default:
+                    JOptionPane.showMessageDialog(this, "Invalid period selected.");
+                    return;
+            }
+
+            // Convert ResultSet to table model
+            DefaultTableModel model = new DefaultTableModel();
+            ResultSetMetaData meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+
+            // Add columns
+            for (int i = 1; i <= columnCount; i++) {
+                model.addColumn(meta.getColumnName(i));
+            }
+
+            // Add rows
+            while (rs.next()) {
+                Object[] row = new Object[columnCount];
+                for (int i = 1; i <= columnCount; i++) {
+                    Object value = rs.getObject(i);
+                    // Format percentage values
+                    if (meta.getColumnName(i).toLowerCase().contains("rate") && value instanceof Number) {
+                        double rate = ((Number) value).doubleValue();
+                        row[i - 1] = String.format("%.2f%%", rate);
+                    } else {
+                        row[i - 1] = value;
+                    }
+                }
+                model.addRow(row);
+            }
+
+            reportTable.setModel(model);
 
             String summary = generateSummary(conn, period, year);
             summaryArea.setText(summary);
@@ -170,56 +214,7 @@ public class CourierPerformanceReportForm extends JDialog {
     private String buildQuery(String period, int year) {
         int month = cbMonth.getSelectedIndex() + 1;
         String date = txtDate.getText().trim();
-
-        switch (period) {
-            case "Daily":
-                return String.format(
-                        "SELECT c.courier_id AS 'Courier ID', " +
-                                "CONCAT(c.first_name, ' ', c.last_name) AS 'Courier Name', " +
-                                "c.vehicle_type AS 'Vehicle Type', " +
-                                "COUNT(ps.parcel_id) AS 'Total Deliveries', " +
-                                "SUM(CASE WHEN ps.status_update = 'Delivered' THEN 1 ELSE 0 END) AS 'Successful', " +
-                                "SUM(CASE WHEN ps.status_update IN ('Cancelled','Returned','Failed') THEN 1 ELSE 0 END) AS 'Unsuccessful', " +
-                                "ROUND((SUM(CASE WHEN ps.status_update='Delivered' THEN 1 ELSE 0 END)/COUNT(ps.parcel_id)*100),2) AS 'Success Rate %%' " +
-                                "FROM parcel_status ps " +
-                                "JOIN couriers c ON ps.courier_id=c.courier_id " +
-                                "WHERE DATE(ps.timestamp)='%s' " +
-                                "GROUP BY c.courier_id ORDER BY `Success Rate %%` DESC",
-                        date);
-
-            case "Monthly":
-                return String.format(
-                        "SELECT c.courier_id AS 'Courier ID', " +
-                                "CONCAT(c.first_name, ' ', c.last_name) AS 'Courier Name', " +
-                                "c.vehicle_type AS 'Vehicle Type', " +
-                                "COUNT(ps.parcel_id) AS 'Total Deliveries', " +
-                                "SUM(CASE WHEN ps.status_update = 'Delivered' THEN 1 ELSE 0 END) AS 'Successful', " +
-                                "SUM(CASE WHEN ps.status_update IN ('Cancelled','Returned','Failed') THEN 1 ELSE 0 END) AS 'Unsuccessful', " +
-                                "ROUND((SUM(CASE WHEN ps.status_update='Delivered' THEN 1 ELSE 0 END)/COUNT(ps.parcel_id)*100),2) AS 'Success Rate %%' " +
-                                "FROM parcel_status ps " +
-                                "JOIN couriers c ON ps.courier_id=c.courier_id " +
-                                "WHERE YEAR(ps.timestamp)=%d AND MONTH(ps.timestamp)=%d " +
-                                "GROUP BY c.courier_id ORDER BY `Success Rate %%` DESC",
-                        year, month);
-
-            case "Yearly":
-                return String.format(
-                        "SELECT c.courier_id AS 'Courier ID', " +
-                                "CONCAT(c.first_name, ' ', c.last_name) AS 'Courier Name', " +
-                                "c.vehicle_type AS 'Vehicle Type', " +
-                                "COUNT(ps.parcel_id) AS 'Total Deliveries', " +
-                                "SUM(CASE WHEN ps.status_update = 'Delivered' THEN 1 ELSE 0 END) AS 'Successful', " +
-                                "SUM(CASE WHEN ps.status_update IN ('Cancelled','Returned','Failed') THEN 1 ELSE 0 END) AS 'Unsuccessful', " +
-                                "ROUND((SUM(CASE WHEN ps.status_update='Delivered' THEN 1 ELSE 0 END)/COUNT(ps.parcel_id)*100),2) AS 'Success Rate %%' " +
-                                "FROM parcel_status ps " +
-                                "JOIN couriers c ON ps.courier_id=c.courier_id " +
-                                "WHERE YEAR(ps.timestamp)=%d " +
-                                "GROUP BY c.courier_id ORDER BY `Success Rate %%` DESC",
-                        year);
-
-            default:
-                return "SELECT * FROM couriers LIMIT 0";
-        }
+        return "";
     }
 
     private String generateSummary(Connection conn, String period, int year) throws SQLException {
